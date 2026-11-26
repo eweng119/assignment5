@@ -4,4 +4,3 @@ __pycache__/
 .DS_Store
 *.db
 *.log
-google_oauth_client_secret.json
