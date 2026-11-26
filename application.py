@@ -31,6 +31,8 @@ import google.oauth2.credentials
 import google_auth_oauthlib.flow
 import googleapiclient.discovery
 
+from googleapiclient import errors
+
 # This variable specifies the name of a file that contains the OAuth 2.0
 # information for this application, including its client_id and client_secret.
 CLIENT_SECRETS_FILE = "google_oauth_client_secret.json"
@@ -433,6 +435,7 @@ def upload_photo():
 # Requirement 3.2
 # - Connect the "login_with_google" form with this method
 # - For http methods list in the definition, use POST and GET
+@app.route("/login_with_google", methods=['POST', 'GET'])
 def authorize():
     if not os.path.exists(CLIENT_SECRETS_FILE):
         return render_template('google-oauth-client-secrets-file-missing.html')
@@ -462,6 +465,7 @@ def authorize():
 
     # Store the state so the callback can verify the auth server response.
     flask.session['state'] = state
+    flask.session['code_verifier'] = flow.code_verifier
     print("Authorization URL:" + authorization_url)
 
     return flask.redirect(authorization_url)
@@ -474,6 +478,7 @@ def oauth2callback():
     state = flask.session['state']
 
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(CLIENT_SECRETS_FILE, scopes=SCOPES, state=state)
+    flow.code_verifier = flask.session['code_verifier']
     flow.redirect_uri = flask.url_for('oauth2callback', _external=True)
 
     # Use the authorization server's response to fetch the OAuth 2.0 tokens.
@@ -560,6 +565,12 @@ def login():
         # Requirement 3.3
         # - Insert User in the DB
         # - Leave password empty
+        dbsession = DBSession()
+        existing_user = dbsession.query(User).filter_by(name=user_email).first()
+        if existing_user == None:
+            new_user = User(name=user_email, password="", user_type="general")
+            dbsession.add(new_user)
+            dbsession.commit()
 
 
         flask.session['credentials'] = credentials_to_dict(credentials)
