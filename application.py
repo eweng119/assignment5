@@ -538,7 +538,14 @@ def login():
         slide_show_display = "display:block;"
 
         # Requirement 2.4
+        dbsession = DBSession()
+        admin_user = dbsession.query(User).filter_by(name=username, user_type="admin").first()
+        if admin_user == None:
+            message = username + " not found."
+            return render_template("login-error.html", message=message)
         # Requirement 2.5
+        if not bcrypt.checkpw(password.encode('utf-8'), admin_user.password.encode('utf-8')):
+            return render_template("login-error.html", message="password does not match.")
 
         
     # Load credentials from the session.
