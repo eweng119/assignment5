@@ -198,16 +198,24 @@ def add_user():
     user = session.query(User).filter_by(name=name).first()
     if user == None:
         hashed = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-        newuser = User(name=name, password=hashed, user_type=user_type)
+        newuser = User(name=name, password=hashed.decode('utf-8'), user_type=user_type)
         session.add(newuser)
         session.commit()
-        return newuser.as_dict()
+        return {"name": newuser.name, "user_type": newuser.user_type}
     else:
         status = ("User with name {name} already exists.\n").format(name=name)
         return Response(status, status=400)
 
 
 ## Requirement 2.3: Add a GET REST API to get users
+@app.route("/users", methods=['GET'])
+def get_users():
+    dbsession = DBSession()
+    users = dbsession.query(User).all()
+    user_list = []
+    for user in users:
+        user_list.append(user.as_dict())
+    return {"users": user_list}
 
 
 # REST API to get photos - Sends photo names back
